@@ -17,4 +17,8 @@ class ListaNegociacoes {
 
         this._negociacoes = [];
     }
+
+    ordena(coluna) {
+        this._negociacoes.sort((a, b) => b[coluna] - a[coluna]);
+    }
 }

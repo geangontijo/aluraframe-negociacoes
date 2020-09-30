@@ -1,7 +1,5 @@
 class NegociacaoController {
   constructor() {
-    let $ = document.querySelector.bind(document);
-
     this._inputData = $("#data");
     this._inputQuantidade = $("#quantidade");
     this._inputValor = $("#valor");
@@ -12,7 +10,8 @@ class NegociacaoController {
       new ListaNegociacoes(),
       this._negociacaoView,
       "adiciona",
-      "limpar"
+      "limpar",
+      "ordena"
     );
 
     this._mensagem = new Bind(
@@ -20,6 +19,13 @@ class NegociacaoController {
       new MensagensView($("#mensagem")),
       "texto"
     );
+
+    this._loading = new Bind(
+      new Loading(),
+      new LoadingView($('#loading')),
+      "status",
+      "_status"
+    )
   }
 
   adiciona(event) {
@@ -43,15 +49,32 @@ class NegociacaoController {
   }
 
   importaNegociacoes() {
-    let xhr = new XMLHttpRequest();
-    xhr.open("GET", "negociacoes/semana");
+    this._loading.status = true;
+    Promise.all([
+      NegociacoesService.obterNegociacoesDaSemana(),
+      NegociacoesService.obterNegociacoesDaSemanaAnterior(),
+      NegociacoesService.obterNegociacoesDaSemanaRetrasada()
+    ])
+      .then(response => {
+        response
+          .reduce((arrayAchatado, item) => arrayAchatado.concat(item), [])
+          .forEach(
+            item => this._listaNegociacoes.adiciona(item)
+          )
+        this._mensagem.texto = 'Negociações importadas com sucesso!'
+        this._loading.status = false;
+      })
+      .catch(err => console.log(err));
+  }
 
-    xhr.onreadystatechange = () => {
+  ordena(coluna) {
+    this._listaNegociacoes.ordena(coluna);
 
-        xhr.readyState === 4
-    };
-
-    xhr.send();
+    let icon = document.createElement('i');
+    icon.classList.add('fas');
+    icon.classList.add('fa-arrow-down');
+    icon.style.marginLeft = '5px';
+    $(`#ordena-${coluna}`).append(icon);
   }
 
   _criaNegociacao(data, quantidade, valor) {
